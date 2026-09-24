@@ -5,7 +5,9 @@ const app = express();
 
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY
+);
 
 app.get("/", (req, res) => {
   res.send("SAROJA AI Gemini Server Running");
@@ -13,21 +15,48 @@ app.get("/", (req, res) => {
 
 app.post("/chat", async (req, res) => {
   try {
+
     const message = req.body.message;
 
     const model = genAI.getGenerativeModel({
       model: "gemini-3.6-flash"
     });
 
-    const result = await model.generateContent(message);
-    const reply = result.response.text();
+    const result =
+      await model.generateContent(message);
+
+    const reply =
+      result.response.text();
 
     res.json({
       reply: reply
     });
+
   } catch (error) {
-    res.status(500).json({
-      error: error.message
+
+    console.log(error);
+
+    const msg = String(error);
+
+    if (msg.includes("429")) {
+
+      return res.json({
+        reply:
+          "⚠️ Aaj ka Gemini free quota khatam ho gaya hai. Thodi der baad try karo."
+      });
+    }
+
+    if (msg.includes("503")) {
+
+      return res.json({
+        reply:
+          "⚠️ AI server abhi busy hai. Kuch der baad try karo."
+      });
+    }
+
+    res.json({
+      reply:
+        "⚠️ Server Error. Baad me try karo."
     });
   }
 });
@@ -35,5 +64,7 @@ app.post("/chat", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(
+    `Server running on port ${PORT}`
+  );
 });
