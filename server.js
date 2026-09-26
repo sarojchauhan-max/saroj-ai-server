@@ -24,6 +24,7 @@ app.post("/chat", async (req, res) => {
       message.toLowerCase().includes("tumhe kisne banaya") ||
       message.toLowerCase().includes("tumko kisne bnaya") ||
       message.toLowerCase().includes("tumhe kisne bnaya") ||
+      message.toLowerCase().includes("tumko kon bnaya") ||
       message.toLowerCase().includes("who made you") ||
       message.toLowerCase().includes("who created you")
     ) {
