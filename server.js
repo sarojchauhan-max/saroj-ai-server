@@ -18,16 +18,20 @@ app.post("/chat", async (req, res) => {
 
     const message = req.body.message;
 
-if (
-  message.toLowerCase().includes("tumko kisne banaya") ||
-  message.toLowerCase().includes("tumhe kisne banaya") ||
-  message.toLowerCase().includes("who made you") ||
-  message.toLowerCase().includes("who created you")
-) {
-  return res.json({
-    reply: "❤️ Mujhe Saroj Brand Babu ne banaya hai."
-  });
-}
+    // Custom Creator Reply
+    if (
+      message.toLowerCase().includes("tumko kisne banaya") ||
+      message.toLowerCase().includes("tumhe kisne banaya") ||
+      message.toLowerCase().includes("tumko kisne bnaya") ||
+      message.toLowerCase().includes("tumhe kisne bnaya") ||
+      message.toLowerCase().includes("who made you") ||
+      message.toLowerCase().includes("who created you")
+    ) {
+      return res.json({
+        reply: "❤️ Mujhe Saroj Brand Babu ne banaya hai."
+      });
+    }
+
     const model = genAI.getGenerativeModel({
       model: "gemini-3.6-flash"
     });
@@ -49,7 +53,6 @@ if (
     const msg = String(error);
 
     if (msg.includes("429")) {
-
       return res.json({
         reply:
           "⚠️ Aaj ka Gemini free quota khatam ho gaya hai. Thodi der baad try karo."
@@ -57,7 +60,6 @@ if (
     }
 
     if (msg.includes("503")) {
-
       return res.json({
         reply:
           "⚠️ AI server abhi busy hai. Kuch der baad try karo."
@@ -74,7 +76,5 @@ if (
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
+  console.log(`Server running on port ${PORT}`);
 });
