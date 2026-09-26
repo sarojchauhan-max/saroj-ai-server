@@ -18,6 +18,16 @@ app.post("/chat", async (req, res) => {
 
     const message = req.body.message;
 
+if (
+  message.toLowerCase().includes("tumko kisne banaya") ||
+  message.toLowerCase().includes("tumhe kisne banaya") ||
+  message.toLowerCase().includes("who made you") ||
+  message.toLowerCase().includes("who created you")
+) {
+  return res.json({
+    reply: "❤️ Mujhe Saroj Brand Babu ne banaya hai."
+  });
+}
     const model = genAI.getGenerativeModel({
       model: "gemini-3.6-flash"
     });
