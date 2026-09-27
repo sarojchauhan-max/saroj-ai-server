@@ -16,9 +16,9 @@ app.get("/", (req, res) => {
 app.post("/chat", async (req, res) => {
   try {
 
-    const message = req.body.message;
+    const message = req.body.message || "";
 
-    // Custom Creator Reply
+    // Creator Reply
     if (
       message.toLowerCase().includes("tumko kisne banaya") ||
       message.toLowerCase().includes("tumhe kisne banaya") ||
@@ -34,14 +34,38 @@ app.post("/chat", async (req, res) => {
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.6-flash"
+      model: "gemini-2.5-flash"
     });
 
-    const result =
-      await model.generateContent(message);
+    const today = new Date().toLocaleDateString(
+      "en-IN",
+      {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      }
+    );
 
-    const reply =
-      result.response.text();
+    const prompt = `
+You are SAROJA AI.
+
+Today's date and day is:
+${today}
+
+Always use the above date/day when the user asks:
+- aaj kya date hai
+- aaj kon sa din hai
+- today's date
+- what day is today
+
+User Message:
+${message}
+`;
+
+    const result = await model.generateContent(prompt);
+
+    const reply = result.response.text();
 
     res.json({
       reply: reply
