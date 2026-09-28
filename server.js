@@ -1,13 +1,13 @@
 const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
 
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY
-);
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY
+});
 
 app.get("/", (req, res) => {
   res.send("SAROJA AI Gemini Server Running");
@@ -18,7 +18,6 @@ app.post("/chat", async (req, res) => {
 
     const message = req.body.message || "";
 
-    // Creator Reply
     if (
       message.toLowerCase().includes("tumko kisne banaya") ||
       message.toLowerCase().includes("tumhe kisne banaya") ||
@@ -32,10 +31,6 @@ app.post("/chat", async (req, res) => {
         reply: "❤️ Mujhe Saroj Brand Babu ne banaya hai."
       });
     }
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash"
-    });
 
     const today = new Date().toLocaleDateString(
       "en-IN",
@@ -63,12 +58,13 @@ User Message:
 ${message}
 `;
 
-    const result = await model.generateContent(prompt);
-
-    const reply = result.response.text();
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt
+    });
 
     res.json({
-      reply: reply
+      reply: result.text
     });
 
   } catch (error) {
@@ -94,6 +90,28 @@ ${message}
     res.json({
       reply:
         "⚠️ Server Error. Baad me try karo."
+    });
+  }
+});
+
+/* IMAGE ENDPOINT */
+
+app.post("/generate-image", async (req, res) => {
+  try {
+
+    const prompt = req.body.prompt || "";
+
+    // Placeholder image
+    res.json({
+      imageUrl:
+        "https://placehold.co/1024x1024/png?text=" +
+        encodeURIComponent(prompt)
+    });
+
+  } catch (error) {
+
+    res.json({
+      error: "Image generation failed"
     });
   }
 });
