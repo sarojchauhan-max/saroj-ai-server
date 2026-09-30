@@ -3,7 +3,7 @@ const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
@@ -13,9 +13,12 @@ app.get("/", (req, res) => {
   res.send("SAROJA AI Gemini Server Running");
 });
 
+/* =========================
+   CHAT
+========================= */
+
 app.post("/chat", async (req, res) => {
   try {
-
     const message = req.body.message || "";
 
     if (
@@ -32,15 +35,12 @@ app.post("/chat", async (req, res) => {
       });
     }
 
-    const today = new Date().toLocaleDateString(
-      "en-IN",
-      {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-      }
-    );
+    const today = new Date().toLocaleDateString("en-IN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
 
     const prompt = `
 You are SAROJA AI.
@@ -58,60 +58,129 @@ User Message:
 ${message}
 `;
 
-    const result = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt
     });
 
+    const reply =
+      response.text || "⚠️ AI ne koi reply nahi diya.";
+
     res.json({
-      reply: result.text
+      reply: reply
     });
 
   } catch (error) {
-
-    console.log(error);
+    console.log("CHAT ERROR:", error);
 
     const msg = String(error);
 
     if (msg.includes("429")) {
       return res.json({
-        reply:
-          "⚠️ Aaj ka Gemini free quota khatam ho gaya hai. Thodi der baad try karo."
+        reply: "⚠️ Gemini quota khatam ho gaya hai. Baad me try karo."
       });
     }
 
     if (msg.includes("503")) {
       return res.json({
-        reply:
-          "⚠️ AI server abhi busy hai. Kuch der baad try karo."
+        reply: "⚠️ AI server busy hai. Kuch der baad try karo."
       });
     }
 
-    res.json({
-      reply:
-        "⚠️ Server Error. Baad me try karo."
+    res.status(500).json({
+      reply: "⚠️ Server Error."
     });
   }
 });
 
-/* IMAGE ENDPOINT */
+/* =========================
+   IMAGE GENERATION
+========================= */
 
 app.post("/generate-image", async (req, res) => {
   try {
+    const prompt = String(req.body.prompt || "").trim();
 
-    const prompt = req.body.prompt || "";
+    if (!prompt) {
+      return res.status(400).json({
+        error: "Image prompt empty hai."
+      });
+    }
 
-    // Placeholder image
+    console.log("IMAGE PROMPT:", prompt);
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-image",
+      contents: prompt,
+      config: {
+        responseModalities: ["TEXT", "IMAGE"]
+      }
+    });
+
+    let imageBase64 = null;
+    let mimeType = "image/png";
+    let textReply = "";
+
+    const candidates = response.candidates || [];
+
+    for (const candidate of candidates) {
+
+      const parts =
+        candidate.content &&
+        candidate.content.parts
+          ? candidate.content.parts
+          : [];
+
+      for (const part of parts) {
+
+        if (part.text) {
+          textReply += part.text;
+        }
+
+        if (part.inlineData) {
+
+          imageBase64 = part.inlineData.data;
+
+          if (part.inlineData.mimeType) {
+            mimeType = part.inlineData.mimeType;
+          }
+        }
+      }
+    }
+
+    if (!imageBase64) {
+      return res.status(500).json({
+        error: "Gemini ne image return nahi ki."
+      });
+    }
+
     res.json({
-      imageUrl:
-        "https://placehold.co/1024x1024/png?text=" +
-        encodeURIComponent(prompt)
+      success: true,
+      mimeType: mimeType,
+      imageBase64: imageBase64,
+      reply: textReply || "🖼️ Image generated successfully."
     });
 
   } catch (error) {
 
-    res.json({
-      error: "Image generation failed"
+    console.log("IMAGE ERROR:", error);
+
+    const msg = String(error);
+
+    if (msg.includes("429")) {
+      return res.status(429).json({
+        error: "⚠️ Image generation quota khatam ho gaya hai."
+      });
+    }
+
+    if (msg.includes("503")) {
+      return res.status(503).json({
+        error: "⚠️ Gemini image server busy hai."
+      });
+    }
+
+    res.status(500).json({
+      error: "⚠️ Image generation failed."
     });
   }
 });
@@ -119,5 +188,5 @@ app.post("/generate-image", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`SAROJA AI server running on port ${PORT}`);
 });
